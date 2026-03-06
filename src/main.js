@@ -85,23 +85,48 @@ function startFadeTimeout() {
   }, 3000);
 }
 
+// Button click feedback animation
+function animateButton(btn) {
+  btn.classList.add('clicked');
+  setTimeout(() => btn.classList.remove('clicked'), 150);
+}
+
 // Update UI from playback state
 function updateUI(state) {
   trackName.textContent = state.track_name;
   artistName.textContent = state.artist_name;
+
+  // Detect track name overflow and add scroll animation
+  requestAnimationFrame(() => {
+    if (trackName.scrollWidth > trackName.clientWidth) {
+      trackName.classList.add('scrolling');
+    } else {
+      trackName.classList.remove('scrolling');
+    }
+  });
+
   currentProgress = state.progress_ms;
   currentDuration = state.duration_ms;
   updateProgress();
   updatePlayIcon(state.is_playing);
   isPlaying = state.is_playing;
 
-  // Update album art (only if URL changed)
+  // Update album art with crossfade (only if URL changed)
   if (albumArt.dataset.currentUrl !== state.album_art_url) {
     albumArt.dataset.currentUrl = state.album_art_url;
     if (state.album_art_url) {
-      albumArt.src = state.album_art_url;
-      albumArt.style.display = 'block';
-      albumArtPlaceholder.style.display = 'none';
+      // Crossfade: fade out, swap, fade in
+      albumArt.classList.add('fade-out');
+      setTimeout(() => {
+        albumArt.src = state.album_art_url;
+        albumArt.style.display = 'block';
+        albumArtPlaceholder.style.display = 'none';
+        // Wait for image to load before fading in
+        albumArt.onload = () => {
+          albumArt.classList.remove('fade-out');
+          albumArt.onload = null;
+        };
+      }, 300); // wait for fade-out
     } else {
       albumArt.style.display = 'none';
       albumArtPlaceholder.style.display = 'block';
@@ -153,6 +178,7 @@ albumArt.onerror = function() {
 // Button handlers
 btnPlay.addEventListener('click', async (e) => {
   e.stopPropagation();
+  animateButton(btnPlay);
   try { await invoke('play_pause'); } catch(e) { console.error(e); }
   // Immediately poll to update UI
   setTimeout(pollPlayback, 300);
@@ -160,12 +186,14 @@ btnPlay.addEventListener('click', async (e) => {
 
 btnNext.addEventListener('click', async (e) => {
   e.stopPropagation();
+  animateButton(btnNext);
   try { await invoke('next_track'); } catch(e) { console.error(e); }
   setTimeout(pollPlayback, 300);
 });
 
 btnPrev.addEventListener('click', async (e) => {
   e.stopPropagation();
+  animateButton(btnPrev);
   try { await invoke('previous_track'); } catch(e) { console.error(e); }
   setTimeout(pollPlayback, 300);
 });
