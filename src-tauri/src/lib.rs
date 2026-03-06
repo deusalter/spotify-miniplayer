@@ -2,7 +2,10 @@ mod spotify_api;
 mod spotify_auth;
 
 use std::sync::Mutex;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::TrayIconBuilder;
 use tauri::State;
+use tauri::Manager;
 
 struct AppState {
     client_id: String,
@@ -82,6 +85,62 @@ pub fn run() {
             previous_track,
             seek_to
         ])
+        .setup(|app| {
+            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let show_hide =
+                MenuItem::with_id(app, "show_hide", "Show/Hide", true, None::<&str>)?;
+            let login =
+                MenuItem::with_id(app, "login", "Login to Spotify", true, None::<&str>)?;
+
+            let menu = Menu::with_items(app, &[&show_hide, &login, &quit])?;
+
+            let _tray = TrayIconBuilder::new()
+                .menu(&menu)
+                .on_menu_event(move |app, event| match event.id().as_ref() {
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    "show_hide" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            if window.is_visible().unwrap_or(false) {
+                                let _ = window.hide();
+                            } else {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        }
+                    }
+                    "login" => {
+                        let app_handle = app.clone();
+                        tauri::async_runtime::spawn(async move {
+                            let state = app_handle.state::<AppState>();
+                            match spotify_auth::start_auth_flow(&state.client_id).await {
+                                Ok((code, verifier)) => {
+                                    match spotify_auth::exchange_code(
+                                        &state.client_id,
+                                        &code,
+                                        &verifier,
+                                    )
+                                    .await
+                                    {
+                                        Ok(tokens) => {
+                                            let _ = spotify_auth::save_tokens(&tokens);
+                                            *state.tokens.lock().unwrap() = Some(tokens);
+                                        }
+                                        Err(e) => eprintln!("Token exchange failed: {}", e),
+                                    }
+                                }
+                                Err(e) => eprintln!("Auth flow failed: {}", e),
+                            }
+                        });
+                    }
+                    _ => {}
+                })
+                .tooltip("Spotify Mini Player")
+                .build(app)?;
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
