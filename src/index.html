@@ -1,39 +1,50 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="stylesheet" href="styles.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
-    <script type="module" src="/main.js" defer></script>
-  </head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spotify Mini Player</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="widget" class="widget" data-tauri-drag-region>
+    <div class="album-art-container">
+      <img id="album-art" class="album-art" src="" alt="Album Art">
+      <div class="album-art-placeholder"></div>
+    </div>
 
-  <body>
-    <main class="container">
-      <h1>Welcome to Tauri</h1>
+    <div class="track-info">
+      <div class="track-name" id="track-name">Not Playing</div>
+      <div class="artist-name" id="artist-name"></div>
+    </div>
 
-      <div class="row">
-        <a href="https://tauri.app" target="_blank">
-          <img src="/assets/tauri.svg" class="logo tauri" alt="Tauri logo" />
-        </a>
-        <a
-          href="https://developer.mozilla.org/en-US/docs/Web/JavaScript"
-          target="_blank"
-        >
-          <img
-            src="/assets/javascript.svg"
-            class="logo vanilla"
-            alt="JavaScript logo"
-          />
-        </a>
+    <div class="progress-container" id="progress-container">
+      <span class="time" id="current-time">0:00</span>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
       </div>
-      <p>Click on the Tauri logo to learn more about the framework</p>
+      <span class="time" id="total-time">0:00</span>
+    </div>
 
-      <form class="row" id="greet-form">
-        <input id="greet-input" placeholder="Enter a name..." />
-        <button type="submit">Greet</button>
-      </form>
-      <p id="greet-msg"></p>
-    </main>
-  </body>
+    <div class="controls">
+      <button class="control-btn" id="btn-prev" aria-label="Previous">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+        </svg>
+      </button>
+      <button class="control-btn play-btn" id="btn-play" aria-label="Play">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" id="play-icon">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      </button>
+      <button class="control-btn" id="btn-next" aria-label="Next">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
 </html>

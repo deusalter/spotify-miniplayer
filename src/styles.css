@@ -1,112 +1,264 @@
-.logo.vanilla:hover {
-  filter: drop-shadow(0 0 2em #ffe21c);
+/* ============================================
+   Spotify Mini Player — Glassmorphism Widget
+   ============================================ */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
 
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+body {
+  background: transparent;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  user-select: none;
 }
 
-.container {
-  margin: 0;
-  padding-top: 10vh;
+/* ---- Widget Shell ---- */
+
+.widget {
+  width: 350px;
+  padding: 22px;
+  border-radius: 20px;
+
+  /* Glassmorphism core */
+  background: rgba(18, 18, 18, 0.72);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+
+  /* Subtle luminous border — inner glow illusion */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    /* outer ambient shadow */
+    0 8px 32px rgba(0, 0, 0, 0.44),
+    0 2px 8px rgba(0, 0, 0, 0.24),
+    /* soft inner glow along the top edge */
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    /* very faint inner light for depth */
+    inset 0 0 20px rgba(255, 255, 255, 0.015);
+
+  /* Entry animation state */
+  opacity: 0;
+  transform: scale(0.95) translateY(6px);
+  transition: opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+  cursor: grab;
+}
+
+.widget:active {
+  cursor: grabbing;
+}
+
+.widget.visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* ---- Album Art ---- */
+
+.album-art-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  overflow: hidden;
+  /* Lift the art slightly off the glass surface */
+  box-shadow:
+    0 4px 20px rgba(0, 0, 0, 0.35),
+    0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+.album-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 14px;
+  /* Smooth image load transition */
+  transition: opacity 0.4s ease;
+}
+
+.album-art-placeholder {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  /* Rich gradient placeholder — feels intentional, not broken */
+  background:
+    linear-gradient(
+      135deg,
+      rgba(30, 30, 40, 1) 0%,
+      rgba(50, 40, 60, 1) 40%,
+      rgba(35, 35, 50, 1) 70%,
+      rgba(25, 25, 35, 1) 100%
+    );
+}
+
+/* ---- Track Info ---- */
+
+.track-info {
+  margin-top: 18px;
+  padding: 0 2px;
+  min-width: 0; /* allow children to shrink for ellipsis */
+}
+
+.track-name {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.artist-name {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  line-height: 1.3;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Progress Bar ---- */
+
+.progress-container {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 0 2px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-a {
+.time {
+  font-size: 11px;
   font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  min-width: 30px;
+  flex-shrink: 0;
 }
 
-a:hover {
-  color: #535bf2;
+#current-time {
+  text-align: left;
 }
 
-h1 {
-  text-align: center;
+#total-time {
+  text-align: right;
 }
 
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
+.progress-bar {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 100px;
   cursor: pointer;
+  position: relative;
+  transition: height 0.18s ease;
+  overflow: hidden;
 }
 
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
+.progress-bar:hover {
+  height: 5px;
 }
 
-input,
-button {
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 100px;
+  position: relative;
+
+  /* Gradient fill — warm accent instead of flat white */
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(200, 220, 255, 0.90) 100%
+  );
+
+  /* Soft luminous trail */
+  box-shadow: 0 0 8px rgba(200, 215, 255, 0.25);
+
+  transition: width 0.3s linear;
+}
+
+/* ---- Controls ---- */
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  margin-top: 16px;
+}
+
+.control-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
   outline: none;
+  -webkit-tap-highlight-color: transparent;
+
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease,
+    background 0.15s ease;
 }
 
-#greet-input {
-  margin-right: 5px;
+.control-btn:hover {
+  color: rgba(255, 255, 255, 1);
+  transform: scale(1.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
+.control-btn:active {
+  transform: scale(0.92);
+  color: rgba(255, 255, 255, 0.85);
+}
 
-  a:hover {
-    color: #24c8db;
-  }
+/* Play button — slightly more prominent */
+.control-btn.play-btn {
+  color: rgba(255, 255, 255, 0.88);
+  /* Faint circle backdrop to separate it visually */
+  background: rgba(255, 255, 255, 0.06);
+  padding: 10px;
+}
 
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
+.control-btn.play-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.10);
+  transform: scale(1.10);
+}
+
+.control-btn.play-btn:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ---- Focus visible — keyboard accessibility ---- */
+
+.control-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: 2px;
+}
+
+/* ---- Scrollbar hide (just in case) ---- */
+
+::-webkit-scrollbar {
+  display: none;
 }
