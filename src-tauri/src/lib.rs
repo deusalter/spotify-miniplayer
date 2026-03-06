@@ -68,6 +68,39 @@ async fn seek_to(state: State<'_, AppState>, position_ms: u64) -> Result<(), Str
     spotify_api::seek_to(&token, position_ms).await
 }
 
+#[tauri::command]
+fn save_window_position(x: i32, y: i32) -> Result<(), String> {
+    let config_dir = dirs::home_dir()
+        .ok_or("Could not find home directory")?
+        .join(".spotify-miniplayer");
+
+    std::fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+
+    let config = serde_json::json!({ "x": x, "y": y });
+    let config_path = config_dir.join("window_position.json");
+    std::fs::write(config_path, serde_json::to_string_pretty(&config).unwrap())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn load_window_position() -> Result<Option<(i32, i32)>, String> {
+    let config_path = dirs::home_dir()
+        .ok_or("Could not find home directory")?
+        .join(".spotify-miniplayer")
+        .join("window_position.json");
+
+    if !config_path.exists() {
+        return Ok(None);
+    }
+
+    let data = std::fs::read_to_string(config_path).map_err(|e| e.to_string())?;
+    let json: serde_json::Value = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+
+    let x = json["x"].as_i64().unwrap_or(100) as i32;
+    let y = json["y"].as_i64().unwrap_or(100) as i32;
+    Ok(Some((x, y)))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -83,7 +116,9 @@ pub fn run() {
             play_pause,
             next_track,
             previous_track,
-            seek_to
+            seek_to,
+            save_window_position,
+            load_window_position
         ])
         .setup(|app| {
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;

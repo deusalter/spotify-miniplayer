@@ -188,3 +188,23 @@ progressContainer.addEventListener('click', async (e) => {
 setInterval(pollPlayback, 2000);
 pollPlayback(); // immediate first poll
 startProgressInterpolation();
+
+// --- Position Persistence ---
+
+// Save position when window is moved
+appWindow.onMoved(({ payload }) => {
+  invoke('save_window_position', { x: payload.x, y: payload.y });
+});
+
+// Restore position on load
+(async () => {
+  try {
+    const pos = await invoke('load_window_position');
+    if (pos) {
+      const { PhysicalPosition } = window.__TAURI__.dpi;
+      await appWindow.setPosition(new PhysicalPosition(pos[0], pos[1]));
+    }
+  } catch (e) {
+    console.error('Failed to restore position:', e);
+  }
+})();
