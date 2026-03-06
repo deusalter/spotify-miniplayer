@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# AI / Claude
+.claude/
+
+# Tauri build output
+src-tauri/target/
