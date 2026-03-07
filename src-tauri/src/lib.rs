@@ -255,8 +255,7 @@ pub fn run() {
                 .tooltip("Spotify Mini Player")
                 .build(app)?;
 
-            // Make the NSWindow background fully transparent so only
-            // the CSS-rounded widget is visible (no rectangle behind it).
+            // Make NSWindow background fully transparent
             #[cfg(target_os = "macos")]
             {
                 use cocoa::appkit::NSWindow;

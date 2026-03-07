@@ -46,15 +46,13 @@ img {
   border-radius: 14px;
   overflow: hidden;
 
-  box-shadow:
-    0 10px 40px rgba(0, 0, 0, 0.5),
-    0 2px 8px rgba(0, 0, 0, 0.25);
+  /* No box-shadow — the album art and rounded corners speak for themselves */
 
   /* Entry animation */
   opacity: 0;
-  transform: scale(0.94);
-  transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-              transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: scale(0.96);
+  transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .widget.visible {
@@ -178,7 +176,11 @@ img {
   border-radius: 50%;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-  transition: all 0.15s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              box-shadow 0.2s ease;
 }
 
 .control-btn:hover {
@@ -190,8 +192,9 @@ img {
 
 .control-btn:active,
 .control-btn.clicked {
-  transform: scale(0.88);
+  transform: scale(0.9);
   background: rgba(255, 255, 255, 0.06);
+  transition: transform 0.08s ease-out, background 0.08s ease-out;
 }
 
 .control-btn.play-btn {
@@ -211,9 +214,10 @@ img {
 }
 
 .control-btn.play-btn:active {
-  transform: scale(0.88);
+  transform: scale(0.9);
   background: rgba(255, 255, 255, 0.1);
   box-shadow: none;
+  transition: transform 0.08s ease-out, background 0.08s ease-out;
 }
 
 /* ---- Progress ---- */
@@ -230,7 +234,7 @@ img {
   cursor: pointer;
   position: relative;
   overflow: visible;
-  transition: height 0.12s ease;
+  transition: height 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .progress-bar:hover {
@@ -243,7 +247,7 @@ img {
   border-radius: 100px;
   position: relative;
   background: rgba(255, 255, 255, 0.85);
-  transition: width 0.3s linear;
+  transition: width 0.15s linear;
 }
 
 .progress-fill::after {
@@ -257,7 +261,7 @@ img {
   border-radius: 50%;
   background: white;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
-  transition: transform 0.12s ease;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .progress-bar:hover .progress-fill::after {

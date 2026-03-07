@@ -57,7 +57,7 @@ function updateProgress() {
 
 function animateButton(btn) {
   btn.classList.add('clicked');
-  setTimeout(() => btn.classList.remove('clicked'), 120);
+  setTimeout(() => btn.classList.remove('clicked'), 180);
 }
 
 // --- Widget show/hide ---
@@ -153,8 +153,9 @@ function startProgressInterpolation() {
 
 // --- Edge Snapping ---
 
-const SNAP_MARGIN = 12; // pixels from screen edge
-const SNAP_THRESHOLD = 80; // how close to edge before snapping
+const SNAP_MARGIN = 6; // pixels from screen edge
+const SNAP_THRESHOLD = 120; // how close to edge before snapping
+const MENU_BAR_HEIGHT = 25; // macOS menu bar offset
 
 async function snapToNearestEdge() {
   if (isSnapping) return;
@@ -177,12 +178,15 @@ async function snapToNearestEdge() {
     const winX = winPos.x / factor;
     const winY = winPos.y / factor;
 
+    // Usable area (below menu bar)
+    const usableTop = screenY + MENU_BAR_HEIGHT;
+
     let targetX = winX;
     let targetY = winY;
 
     const distLeft = winX - screenX;
     const distRight = (screenX + screenW) - (winX + winW);
-    const distTop = winY - screenY;
+    const distTop = winY - usableTop;
     const distBottom = (screenY + screenH) - (winY + winH);
 
     if (distLeft < SNAP_THRESHOLD) {
@@ -192,7 +196,7 @@ async function snapToNearestEdge() {
     }
 
     if (distTop < SNAP_THRESHOLD) {
-      targetY = screenY + SNAP_MARGIN;
+      targetY = usableTop + SNAP_MARGIN;
     } else if (distBottom < SNAP_THRESHOLD) {
       targetY = screenY + screenH - winH - SNAP_MARGIN;
     }
@@ -211,23 +215,27 @@ async function snapToNearestEdge() {
 }
 
 async function animateToPosition(fromX, fromY, toX, toY, scaleFactor) {
-  const totalMs = 180;
-  const fps = 60;
-  const steps = Math.ceil(totalMs / (1000 / fps));
-  const interval = totalMs / steps;
+  const totalMs = 280;
+  const frameMs = 1000 / 120; // target 120fps for smoothness
+  const frames = Math.ceil(totalMs / frameMs);
 
-  for (let i = 1; i <= steps; i++) {
-    const t = i / steps;
-    // Ease-out quart — fast start, gentle settle
-    const ease = 1 - Math.pow(1 - t, 4);
+  for (let i = 1; i <= frames; i++) {
+    const t = i / frames;
+    // Ease-out expo — very smooth deceleration
+    const ease = 1 - Math.pow(2, -10 * t);
     const x = fromX + (toX - fromX) * ease;
     const y = fromY + (toY - fromY) * ease;
     await appWindow.setPosition(new PhysicalPosition(
       Math.round(x * scaleFactor),
       Math.round(y * scaleFactor)
     ));
-    await new Promise(r => setTimeout(r, interval));
+    await new Promise(r => setTimeout(r, frameMs));
   }
+  // Ensure final position is exact
+  await appWindow.setPosition(new PhysicalPosition(
+    Math.round(toX * scaleFactor),
+    Math.round(toY * scaleFactor)
+  ));
 }
 
 // --- Event Handlers ---
@@ -237,25 +245,25 @@ albumArt.onerror = function() {
   bgPlaceholder.style.display = 'block';
 };
 
-btnPlay.addEventListener('click', async (e) => {
+btnPlay.addEventListener('click', (e) => {
   e.stopPropagation();
   animateButton(btnPlay);
-  try { await invoke('play_pause'); } catch(e) { console.error(e); }
-  setTimeout(pollPlayback, 300);
+  // Optimistic: toggle icon immediately
+  isPlaying = !isPlaying;
+  updatePlayIcon(isPlaying);
+  invoke('play_pause').then(() => pollPlayback()).catch(e => console.error(e));
 });
 
-btnNext.addEventListener('click', async (e) => {
+btnNext.addEventListener('click', (e) => {
   e.stopPropagation();
   animateButton(btnNext);
-  try { await invoke('next_track'); } catch(e) { console.error(e); }
-  setTimeout(pollPlayback, 300);
+  invoke('next_track').then(() => setTimeout(pollPlayback, 200)).catch(e => console.error(e));
 });
 
-btnPrev.addEventListener('click', async (e) => {
+btnPrev.addEventListener('click', (e) => {
   e.stopPropagation();
   animateButton(btnPrev);
-  try { await invoke('previous_track'); } catch(e) { console.error(e); }
-  setTimeout(pollPlayback, 300);
+  invoke('previous_track').then(() => setTimeout(pollPlayback, 200)).catch(e => console.error(e));
 });
 
 progressContainer.addEventListener('click', async (e) => {
