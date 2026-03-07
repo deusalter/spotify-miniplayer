@@ -7,18 +7,19 @@
     "frontendDist": "../src"
   },
   "app": {
+    "macOSPrivateApi": true,
     "withGlobalTauri": true,
     "windows": [
       {
         "label": "main",
         "title": "Spotify Mini Player",
-        "width": 350,
-        "height": 420,
+        "width": 280,
+        "height": 160,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
         "resizable": false,
-        "visible": false,
+        "visible": true,
         "skipTaskbar": true
       }
     ],

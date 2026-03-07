@@ -25,6 +25,7 @@ dist-ssr
 
 # AI / Claude
 .claude/
+CLAUDE.md
 
 # Tauri build output
 src-tauri/target/
