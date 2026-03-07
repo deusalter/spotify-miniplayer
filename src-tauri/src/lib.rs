@@ -13,6 +13,7 @@ use tauri::{LogicalSize, State, Manager};
 struct AppState {
     client_id: String,
     tokens: Mutex<Option<spotify_auth::TokenResponse>>,
+    pre_fullscreen: Mutex<Option<(u32, u32, i32, i32)>>,
 }
 
 fn get_access_token(state: &State<'_, AppState>) -> Result<String, String> {
@@ -154,6 +155,42 @@ fn load_window_position() -> Result<Option<(i32, i32)>, String> {
     Ok(Some((x, y)))
 }
 
+#[tauri::command]
+async fn enter_fullscreen(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        let size = window.outer_size().map_err(|e| e.to_string())?;
+        let pos = window.outer_position().map_err(|e| e.to_string())?;
+
+        let state = app.state::<AppState>();
+        *state.pre_fullscreen.lock().unwrap() = Some((
+            size.width, size.height,
+            pos.x, pos.y,
+        ));
+
+        window.navigate("fullscreen.html".parse().unwrap()).map_err(|e| e.to_string())?;
+        window.set_fullscreen(true).map_err(|e| e.to_string())?;
+        window.set_always_on_top(false).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn exit_fullscreen(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.set_fullscreen(false).map_err(|e| e.to_string())?;
+
+        let state = app.state::<AppState>();
+        if let Some((w, h, x, y)) = *state.pre_fullscreen.lock().unwrap() {
+            window.set_size(tauri::PhysicalSize::new(w, h)).map_err(|e| e.to_string())?;
+            window.set_position(tauri::PhysicalPosition::new(x, y)).map_err(|e| e.to_string())?;
+        }
+
+        window.set_always_on_top(true).map_err(|e| e.to_string())?;
+        window.navigate("index.html".parse().unwrap()).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -161,6 +198,7 @@ pub fn run() {
         .manage(AppState {
             client_id: "719f70b25a4b4162814f4906e2cd9eb2".to_string(),
             tokens: Mutex::new(spotify_auth::load_tokens().unwrap_or(None)),
+            pre_fullscreen: Mutex::new(None),
         })
         .invoke_handler(tauri::generate_handler![
             greet,
@@ -171,7 +209,9 @@ pub fn run() {
             previous_track,
             seek_to,
             save_window_position,
-            load_window_position
+            load_window_position,
+            enter_fullscreen,
+            exit_fullscreen
         ])
         .setup(|app| {
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
