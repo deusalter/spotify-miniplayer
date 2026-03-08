@@ -31,6 +31,8 @@ open = "5"
 tiny_http = "0.12"
 dirs = "5"
 urlencoding = "2"
+cpal = "0.15"
+spectrum-analyzer = "1.6"
 
 [target."cfg(target_os = \"macos\")".dependencies]
 cocoa = "0.26"

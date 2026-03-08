@@ -1,3 +1,4 @@
+mod audio_capture;
 mod spotify_api;
 mod spotify_auth;
 
@@ -191,6 +192,11 @@ async fn exit_fullscreen(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn start_visualizer(on_spectrum: tauri::ipc::Channel<audio_capture::SpectrumData>) -> Result<(), String> {
+    audio_capture::start_capture(on_spectrum)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -211,7 +217,8 @@ pub fn run() {
             save_window_position,
             load_window_position,
             enter_fullscreen,
-            exit_fullscreen
+            exit_fullscreen,
+            start_visualizer
         ])
         .setup(|app| {
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
