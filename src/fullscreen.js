@@ -215,6 +215,65 @@ document.addEventListener('dblclick', () => {
 document.addEventListener('dragstart', (e) => e.preventDefault());
 document.addEventListener('selectstart', (e) => e.preventDefault());
 
+// ---- Visualizer ----
+
+const canvas = document.getElementById('fs-visualizer');
+const ctx = canvas.getContext('2d');
+let spectrumData = null;
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = 140;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function renderVisualizer() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (spectrumData && spectrumData.magnitudes) {
+    const bars = spectrumData.magnitudes;
+    const numBars = bars.length;
+    const barWidth = canvas.width / numBars;
+    const gap = 2;
+    const maxHeight = canvas.height - 10;
+    const [r, g, b] = accentColor;
+
+    for (let i = 0; i < numBars; i++) {
+      const barHeight = bars[i] * maxHeight;
+      const x = i * barWidth + gap / 2;
+      const y = canvas.height - barHeight;
+
+      const gradient = ctx.createLinearGradient(x, y, x, canvas.height);
+      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.8)`);
+      gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.1)`);
+
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.roundRect(x, y, barWidth - gap, barHeight, 2);
+      ctx.fill();
+    }
+  }
+
+  requestAnimationFrame(renderVisualizer);
+}
+
+async function initVisualizer() {
+  try {
+    const { Channel } = window.__TAURI__.core;
+    const onSpectrum = new Channel();
+    onSpectrum.onmessage = (data) => {
+      spectrumData = data;
+    };
+    await invoke('start_visualizer', { onSpectrum });
+  } catch (e) {
+    console.error('Visualizer init failed:', e);
+  }
+}
+
+requestAnimationFrame(renderVisualizer);
+initVisualizer();
+
 // ---- Start ----
 
 setInterval(pollPlayback, 2000);
