@@ -281,6 +281,7 @@ progressContainer.addEventListener('click', async (e) => {
 
 // --- Dragging + Double-click to fullscreen ---
 let lastMousedownTime = 0;
+let dragTimer = null;
 document.addEventListener('mousedown', async (e) => {
   if (e.target.closest('button')) return;
   if (e.target.closest('.progress-bar')) return;
@@ -290,17 +291,23 @@ document.addEventListener('mousedown', async (e) => {
 
   const now = Date.now();
   if (now - lastMousedownTime < 350) {
+    // Double-click detected — cancel pending drag, enter fullscreen
+    if (dragTimer) { clearTimeout(dragTimer); dragTimer = null; }
     lastMousedownTime = 0;
     try { await invoke('enter_fullscreen'); } catch(err) { console.error(err); }
     return;
   }
   lastMousedownTime = now;
 
-  try {
-    await appWindow.startDragging();
-  } catch(err) {
-    console.error('Drag failed:', err);
-  }
+  // Delay drag start so second click has a chance to fire
+  dragTimer = setTimeout(async () => {
+    dragTimer = null;
+    try {
+      await appWindow.startDragging();
+    } catch(err) {
+      console.error('Drag failed:', err);
+    }
+  }, 180);
 });
 
 // Kill all default browser drag/select behavior

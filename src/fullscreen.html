@@ -14,16 +14,24 @@
       <div class="fs-art-container">
         <img id="fs-album-art" class="fs-album-art" src="" alt="" draggable="false">
       </div>
-      <div class="fs-tui-panel" id="fs-tui-panel">
+      <div class="fs-panel" id="fs-panel">
         <div class="fs-track-name" id="fs-track-name">Not Playing</div>
         <div class="fs-artist-name" id="fs-artist-name"></div>
         <div class="fs-controls">
-          <span class="fs-btn" id="fs-btn-prev">◂◂</span>
-          <span class="fs-btn fs-btn-play" id="fs-btn-play">▶</span>
-          <span class="fs-btn" id="fs-btn-next">▸▸</span>
+          <button class="fs-btn" id="fs-btn-prev">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" transform="scale(-1,1) translate(-24,0)"/></svg>
+          </button>
+          <button class="fs-btn fs-btn-play" id="fs-btn-play">
+            <svg id="fs-play-icon" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="fs-btn" id="fs-btn-next">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
         </div>
-        <div class="fs-progress">
-          <span class="fs-progress-fill" id="fs-progress-fill">━━━━━━━━━</span><span class="fs-progress-empty" id="fs-progress-empty">╍╍╍╍╍╍╍╍╍╍╍╍╍</span>
+        <div class="fs-progress-area" id="fs-progress-area">
+          <div class="fs-progress-bar">
+            <div class="fs-progress-fill" id="fs-progress-fill"></div>
+          </div>
         </div>
         <div class="fs-time-row">
           <span id="fs-current-time">0:00</span>

@@ -21,16 +21,12 @@ const fsArtistName = document.getElementById('fs-artist-name');
 const fsBtnPrev = document.getElementById('fs-btn-prev');
 const fsBtnPlay = document.getElementById('fs-btn-play');
 const fsBtnNext = document.getElementById('fs-btn-next');
+const fsPlayIcon = document.getElementById('fs-play-icon');
 const fsProgressFill = document.getElementById('fs-progress-fill');
-const fsProgressEmpty = document.getElementById('fs-progress-empty');
+const fsProgressArea = document.getElementById('fs-progress-area');
 const fsCurrentTime = document.getElementById('fs-current-time');
 const fsTotalTime = document.getElementById('fs-total-time');
-const fsTuiPanel = document.getElementById('fs-tui-panel');
-const fsVisualizer = document.getElementById('fs-visualizer');
-
-// ---- Constants ----
-
-const PROGRESS_CHARS = 22;
+const fsPanel = document.getElementById('fs-panel');
 
 // ---- Utilities ----
 
@@ -45,14 +41,10 @@ function formatTime(ms) {
 
 function updateProgress() {
   if (currentDuration > 0) {
-    const ratio = Math.min(currentProgress / currentDuration, 1);
-    const filled = Math.round(ratio * PROGRESS_CHARS);
-    const empty = PROGRESS_CHARS - filled;
-    fsProgressFill.textContent = '\u2501'.repeat(filled);   // ━
-    fsProgressEmpty.textContent = '\u254D'.repeat(empty);    // ╍
+    const pct = Math.min(currentProgress / currentDuration, 1) * 100;
+    fsProgressFill.style.width = `${pct}%`;
   } else {
-    fsProgressFill.textContent = '';
-    fsProgressEmpty.textContent = '\u254D'.repeat(PROGRESS_CHARS);
+    fsProgressFill.style.width = '0%';
   }
   fsCurrentTime.textContent = formatTime(currentProgress);
   fsTotalTime.textContent = formatTime(currentDuration);
@@ -61,7 +53,11 @@ function updateProgress() {
 // ---- Play/pause icon ----
 
 function updatePlayIcon() {
-  fsBtnPlay.textContent = isPlaying ? '\u2590\u2590' : '\u25B6'; // ▐▐ or ▶
+  if (isPlaying) {
+    fsPlayIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+  } else {
+    fsPlayIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+  }
 }
 
 // ---- Dominant color extraction ----
@@ -79,7 +75,7 @@ function extractDominantColor(imgUrl) {
       const data = ctx.getImageData(0, 0, 50, 50).data;
 
       let r = 0, g = 0, b = 0, count = 0;
-      for (let i = 0; i < data.length; i += 16) { // every 4th pixel (4 channels * 4)
+      for (let i = 0; i < data.length; i += 16) {
         r += data[i];
         g += data[i + 1];
         b += data[i + 2];
@@ -101,12 +97,11 @@ function extractDominantColor(imgUrl) {
   img.src = imgUrl;
 }
 
-// ---- Apply accent color to UI elements ----
+// ---- Apply accent color ----
 
 function applyAccentColor() {
   const [r, g, b] = accentColor;
-  fsProgressFill.style.color = `rgb(${r}, ${g}, ${b})`;
-  fsTuiPanel.style.borderColor = `rgba(${r}, ${g}, ${b}, 0.25)`;
+  fsProgressFill.style.background = `rgb(${r}, ${g}, ${b})`;
 }
 
 // ---- UI update ----
@@ -122,11 +117,9 @@ function updateUI(state) {
   updateProgress();
   updatePlayIcon();
 
-  // Album art + background crossfade
   if (state.album_art_url && state.album_art_url !== currentArtUrl) {
     currentArtUrl = state.album_art_url;
 
-    // Crossfade background
     fsBg.classList.add('fade-out');
     setTimeout(() => {
       fsBg.src = state.album_art_url;
@@ -136,7 +129,6 @@ function updateUI(state) {
       };
     }, 300);
 
-    // Crossfade album art
     fsAlbumArt.style.opacity = '0';
     setTimeout(() => {
       fsAlbumArt.src = state.album_art_url;
@@ -146,7 +138,6 @@ function updateUI(state) {
       };
     }, 300);
 
-    // Extract dominant color from new art
     extractDominantColor(state.album_art_url);
   }
 }
@@ -156,9 +147,7 @@ function updateUI(state) {
 async function pollPlayback() {
   try {
     const state = await invoke('get_playback');
-    if (state) {
-      updateUI(state);
-    }
+    if (state) updateUI(state);
   } catch (e) {
     console.error('Poll failed:', e);
   }
@@ -178,7 +167,6 @@ setInterval(() => {
 
 fsBtnPlay.addEventListener('click', (e) => {
   e.stopPropagation();
-  // Optimistic toggle
   isPlaying = !isPlaying;
   updatePlayIcon();
   invoke('play_pause').catch((err) => console.error('play_pause failed:', err));
@@ -198,6 +186,21 @@ fsBtnPrev.addEventListener('click', (e) => {
     .catch((err) => console.error('previous_track failed:', err));
 });
 
+// ---- Progress bar click to seek ----
+
+fsProgressArea.addEventListener('click', async (e) => {
+  e.stopPropagation();
+  const bar = fsProgressArea.querySelector('.fs-progress-bar');
+  const rect = bar.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  const posMs = Math.floor(pct * currentDuration);
+  try {
+    await invoke('seek_to', { positionMs: posMs });
+    currentProgress = posMs;
+    updateProgress();
+  } catch (err) { console.error(err); }
+});
+
 // ---- Exit handlers ----
 
 document.addEventListener('keydown', (e) => {
@@ -206,7 +209,8 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-document.addEventListener('dblclick', () => {
+document.addEventListener('dblclick', (e) => {
+  if (e.target.closest('button')) return;
   invoke('exit_fullscreen').catch((err) => console.error('exit_fullscreen failed:', err));
 });
 
@@ -219,52 +223,93 @@ document.addEventListener('selectstart', (e) => e.preventDefault());
 
 const canvas = document.getElementById('fs-visualizer');
 const ctx = canvas.getContext('2d');
-let spectrumData = null;
+
+const NUM_BARS = 28;
+let targetBars = new Array(NUM_BARS).fill(0);
+let displayBars = new Array(NUM_BARS).fill(0);
+let velocities = new Array(NUM_BARS).fill(0);
 
 function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = 140;
+  canvas.width = window.innerWidth * window.devicePixelRatio;
+  canvas.height = 120 * window.devicePixelRatio;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = '120px';
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
 function renderVisualizer() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const w = window.innerWidth;
+  const h = 120;
+  ctx.clearRect(0, 0, w, h);
 
-  if (spectrumData && spectrumData.magnitudes) {
-    const bars = spectrumData.magnitudes;
-    const numBars = bars.length;
-    const barWidth = canvas.width / numBars;
-    const gap = 2;
-    const maxHeight = canvas.height - 10;
-    const [r, g, b] = accentColor;
+  const [r, g, b] = accentColor;
+  const barWidth = w / NUM_BARS;
+  const gap = 3;
+  const maxH = h - 4;
 
-    for (let i = 0; i < numBars; i++) {
-      const barHeight = bars[i] * maxHeight;
-      const x = i * barWidth + gap / 2;
-      const y = canvas.height - barHeight;
+  // Spring-based smoothing
+  for (let i = 0; i < NUM_BARS; i++) {
+    const diff = targetBars[i] - displayBars[i];
+    velocities[i] += diff * 0.35;       // strong spring — responsive
+    velocities[i] *= 0.55;              // light damping — fluid
+    displayBars[i] += velocities[i];
+    if (displayBars[i] < 0.001) displayBars[i] = 0;
+  }
 
-      const gradient = ctx.createLinearGradient(x, y, x, canvas.height);
-      gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.8)`);
-      gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.1)`);
+  for (let i = 0; i < NUM_BARS; i++) {
+    const barH = Math.max(displayBars[i] * maxH, 1);
+    const x = i * barWidth + gap / 2;
+    const y = h - barH;
 
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.roundRect(x, y, barWidth - gap, barHeight, 2);
-      ctx.fill();
-    }
+    const grad = ctx.createLinearGradient(x, y, x, h);
+    grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.5)`);
+    grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.02)`);
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barWidth - gap, barH, 2);
+    ctx.fill();
   }
 
   requestAnimationFrame(renderVisualizer);
+}
+
+// When new spectrum data arrives, update targets (decoupled from rendering)
+function onSpectrumUpdate(data) {
+  if (!data || !data.magnitudes) return;
+  const raw = data.magnitudes;
+  const rawLen = raw.length;
+
+  // Resample raw (32) into NUM_BARS with averaging
+  let vals = new Array(NUM_BARS);
+  for (let i = 0; i < NUM_BARS; i++) {
+    const startF = (i / NUM_BARS) * rawLen;
+    const endF = ((i + 1) / NUM_BARS) * rawLen;
+    const start = Math.floor(startF);
+    const end = Math.min(Math.ceil(endF), rawLen);
+    let sum = 0;
+    for (let j = start; j < end; j++) sum += raw[j];
+    const avg = sum / Math.max(end - start, 1);
+    // Boost higher frequencies — low freqs naturally dominate
+    const boost = 1 + (i / NUM_BARS) * 4;
+    vals[i] = avg * boost;
+  }
+
+  // Normalize to 0-1
+  let max = 0;
+  for (let i = 0; i < NUM_BARS; i++) if (vals[i] > max) max = vals[i];
+  if (max > 0) {
+    for (let i = 0; i < NUM_BARS; i++) targetBars[i] = vals[i] / max;
+  }
 }
 
 async function initVisualizer() {
   try {
     const { Channel } = window.__TAURI__.core;
     const onSpectrum = new Channel();
-    onSpectrum.onmessage = (data) => {
-      spectrumData = data;
-    };
+    onSpectrum.onmessage = onSpectrumUpdate;
     await invoke('start_visualizer', { onSpectrum });
   } catch (e) {
     console.error('Visualizer init failed:', e);

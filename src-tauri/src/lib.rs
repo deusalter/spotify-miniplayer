@@ -168,7 +168,9 @@ async fn enter_fullscreen(app: tauri::AppHandle) -> Result<(), String> {
             pos.x, pos.y,
         ));
 
-        window.navigate("fullscreen.html".parse().unwrap()).map_err(|e| e.to_string())?;
+        let mut url = window.url().map_err(|e| e.to_string())?;
+        url.set_path("/fullscreen.html");
+        window.navigate(url).map_err(|e| e.to_string())?;
         window.set_fullscreen(true).map_err(|e| e.to_string())?;
         window.set_always_on_top(false).map_err(|e| e.to_string())?;
     }
@@ -178,7 +180,16 @@ async fn enter_fullscreen(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 async fn exit_fullscreen(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
+        // Navigate back first, then exit fullscreen and restore size
+        // This prevents the fullscreen page from rendering at mini player size
+        let mut url = window.url().map_err(|e| e.to_string())?;
+        url.set_path("/index.html");
+        window.navigate(url).map_err(|e| e.to_string())?;
+
         window.set_fullscreen(false).map_err(|e| e.to_string())?;
+
+        // Small delay to let the navigation start before resizing
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
         let state = app.state::<AppState>();
         if let Some((w, h, x, y)) = *state.pre_fullscreen.lock().unwrap() {
@@ -187,7 +198,6 @@ async fn exit_fullscreen(app: tauri::AppHandle) -> Result<(), String> {
         }
 
         window.set_always_on_top(true).map_err(|e| e.to_string())?;
-        window.navigate("index.html".parse().unwrap()).map_err(|e| e.to_string())?;
     }
     Ok(())
 }
