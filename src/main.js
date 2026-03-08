@@ -279,14 +279,23 @@ progressContainer.addEventListener('click', async (e) => {
   } catch(e) { console.error(e); }
 });
 
-// --- Dragging ---
-// Capture at document level so it works in all layouts/orientations
+// --- Dragging + Double-click to fullscreen ---
+let lastMousedownTime = 0;
 document.addEventListener('mousedown', async (e) => {
   if (e.target.closest('button')) return;
   if (e.target.closest('.progress-bar')) return;
   if (e.target.closest('.progress-area')) return;
   if (e.button !== 0) return;
   e.preventDefault();
+
+  const now = Date.now();
+  if (now - lastMousedownTime < 350) {
+    lastMousedownTime = 0;
+    try { await invoke('enter_fullscreen'); } catch(err) { console.error(err); }
+    return;
+  }
+  lastMousedownTime = now;
+
   try {
     await appWindow.startDragging();
   } catch(err) {
