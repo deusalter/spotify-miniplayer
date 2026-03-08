@@ -1,0 +1,247 @@
+/* ============================================
+   Spotify Fullscreen — Now Playing View
+   Blurred ambient art, TUI control panel,
+   canvas visualizer at the bottom.
+   ============================================ */
+
+/* ---- Reset ---- */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ---- Kill all selection and drag everywhere ---- */
+
+*, *::before, *::after {
+  -webkit-user-select: none !important;
+  -webkit-user-drag: none !important;
+  -webkit-touch-callout: none !important;
+  user-select: none !important;
+}
+
+img {
+  pointer-events: none !important;
+  -webkit-user-drag: none !important;
+}
+
+/* ---- Root ---- */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  cursor: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---- Container ---- */
+
+.fs-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #000;
+}
+
+/* ---- Blurred ambient background ---- */
+
+.fs-bg {
+  position: absolute;
+  inset: -40px;
+  width: calc(100% + 80px);
+  height: calc(100% + 80px);
+  object-fit: cover;
+  filter: blur(60px) saturate(1.3) brightness(0.4);
+  z-index: 0;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  transition: opacity 0.6s ease;
+}
+
+.fs-bg.fade-out {
+  opacity: 0;
+}
+
+/* ---- Dark overlay on top of blurred bg ---- */
+
+.fs-bg-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+/* ---- Content layer (art + panel) ---- */
+
+.fs-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 80px;
+  width: 100%;
+  height: 100%;
+  padding: 60px;
+}
+
+/* ---- Album art ---- */
+
+.fs-art-container {
+  width: 420px;
+  height: 420px;
+  min-width: 420px;
+  min-height: 420px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.5),
+    0 20px 80px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.fs-album-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: opacity 0.5s ease;
+}
+
+/* ---- TUI-style control panel ---- */
+
+.fs-tui-panel {
+  font-family: 'SF Mono', 'JetBrains Mono', 'Menlo', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 32px 36px;
+  min-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  cursor: none;
+}
+
+.fs-tui-panel:hover {
+  cursor: default;
+}
+
+/* ---- Track name ---- */
+
+.fs-track-name {
+  font-size: 22px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Artist name ---- */
+
+.fs-artist-name {
+  font-size: 15px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: -4px;
+}
+
+/* ---- Playback controls ---- */
+
+.fs-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  margin-top: 8px;
+}
+
+.fs-btn {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: color 0.2s ease,
+              transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  line-height: 1;
+}
+
+.fs-btn:hover {
+  color: #fff;
+  transform: scale(1.15);
+}
+
+.fs-btn:active {
+  transform: scale(0.9);
+  transition: transform 0.08s ease-out;
+}
+
+.fs-btn-play {
+  font-size: 26px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.fs-btn-play:hover {
+  color: #fff;
+  transform: scale(1.2);
+}
+
+/* ---- TUI progress bar ---- */
+
+.fs-progress {
+  font-size: 14px;
+  letter-spacing: 1px;
+  line-height: 1;
+  margin-top: 4px;
+}
+
+.fs-progress-fill {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.fs-progress-empty {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* ---- Time row ---- */
+
+.fs-time-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+  font-variant-numeric: tabular-nums;
+  margin-top: -4px;
+}
+
+/* ---- Audio visualizer canvas ---- */
+
+.fs-visualizer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 140px;
+  z-index: 3;
+  pointer-events: none;
+}

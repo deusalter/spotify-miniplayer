@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Now Playing</title>
+  <link rel="stylesheet" href="fullscreen.css">
+</head>
+<body>
+  <div class="fs-container">
+    <img id="fs-bg" class="fs-bg" src="" alt="" draggable="false">
+    <div class="fs-bg-overlay"></div>
+    <div class="fs-content">
+      <div class="fs-art-container">
+        <img id="fs-album-art" class="fs-album-art" src="" alt="" draggable="false">
+      </div>
+      <div class="fs-tui-panel" id="fs-tui-panel">
+        <div class="fs-track-name" id="fs-track-name">Not Playing</div>
+        <div class="fs-artist-name" id="fs-artist-name"></div>
+        <div class="fs-controls">
+          <span class="fs-btn" id="fs-btn-prev">◂◂</span>
+          <span class="fs-btn fs-btn-play" id="fs-btn-play">▶</span>
+          <span class="fs-btn" id="fs-btn-next">▸▸</span>
+        </div>
+        <div class="fs-progress">
+          <span class="fs-progress-fill" id="fs-progress-fill">━━━━━━━━━</span><span class="fs-progress-empty" id="fs-progress-empty">╍╍╍╍╍╍╍╍╍╍╍╍╍</span>
+        </div>
+        <div class="fs-time-row">
+          <span id="fs-current-time">0:00</span>
+          <span id="fs-total-time">0:00</span>
+        </div>
+      </div>
+    </div>
+    <canvas id="fs-visualizer" class="fs-visualizer"></canvas>
+  </div>
+  <script src="fullscreen.js"></script>
+</body>
+</html>
